@@ -17,9 +17,11 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-  "pyphi@git+https://github.com/wmayner/pyphi#egg=<feature/iit4.0>",
-  "graphiit@git+https://github.com/CSC-UW/graphiit#egg=<feature/iit-4.0>",
-  "jupyter"
+  "pyphi @ git+https://github.com/wmayner/pyphi.git@feature/iit-4.0",
+  "graphiit @ git+https://github.com/CSC-UW/graphiit.git@feature/iit-4.0",
+  "jupyter",
+  "numpy",
+  "matplotlib"
 ]
 
 [project.urls]
