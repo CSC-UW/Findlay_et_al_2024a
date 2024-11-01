@@ -4,7 +4,9 @@ import itertools
 import graphiit
 import numpy as np
 import pyphi.utils
+from tqdm.auto import tqdm
 
+from . import findlay2024a as cc
 
 @functools.cache
 def get_target_labels(k):
@@ -275,3 +277,35 @@ def get_WXyZ_graphiit(feedback):
     n = len(state)
     k = int(np.log2(n))
     return get_graphiit(k, tpm, state, feedback)
+
+def check_tpm_simulation(tpm, feedback: bool):
+    network = pyphi.Network(tpm)
+    cycles = cc.get_cycles(network)
+
+    k = int(np.log2(len(network)))
+    n = 2 ** k
+    outputs = get_data_register_output_labels(k)
+    for cycle in cycles:
+        initial_state = cycle[0]
+        graph = get_graphiit(k, tpm, initial_state, feedback)
+        graph.tic(1)
+        simulated_cycle = []
+        for state in cycle:
+            simulated_cycle.append(tuple(graph.get_state_array(outputs)))
+            if not tuple(graph.get_state_array(outputs)) == tuple(state):
+                msg = (
+                    f"Expected state: {tuple(state)}.\n"
+                    f"Observed state: {tuple(graph.get_state_array(outputs))}.\n"
+                    f"Cycle: {cycle}.\n"
+                    f"TPM: {tpm}.\n"
+                )
+                raise ValueError(msg)
+            graph.tic(2 * n)
+
+def check_k_simulation(k, n_trials, feedback: bool):
+    n = 2 ** k
+    all_states = np.array(list(pyphi.utils.all_states(n)))
+    for _ in tqdm(range(n_trials)):
+        ixs = np.random.choice(2 ** n, 2 ** n, replace=True)
+        tpm = all_states[ixs]
+        check_tpm_simulation(tpm, feedback)

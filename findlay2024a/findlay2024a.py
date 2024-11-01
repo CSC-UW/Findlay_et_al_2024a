@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pyphi
-import pyphi.backwards
+import pyphi.compute
 import pyphi.convert
-import pyphi.exceptions
-import pyphi.network_generator
-import pyphi.new_big_phi
+#import pyphi.exceptions
+#import pyphi.network_generator
+#import pyphi.new_big_phi
 import pyphi.utils
-import pyphi.validate
+#import pyphi.validate
 import pyphi.visualize
 
 
@@ -147,58 +147,59 @@ def get_theme():
     )
 
 
-def reachable_subsystems(network, indices, state, **kwargs):
-    """A generator over all subsystems in a valid state."""
-    pyphi.validate.is_network(network)
+# Shouldn't be necessary anymore.
+# def reachable_subsystems(network, indices, state, **kwargs):
+#     """A generator over all subsystems in a valid state."""
+#     pyphi.validate.is_network(network)
 
-    # Return subsystems largest to smallest to optimize parallel
-    # resource usage.
-    for subset in pyphi.utils.powerset(indices, nonempty=True, reverse=True):
-        try:
-            cause_subsystem = pyphi.Subsystem(
-                network, state, subset, backward_tpm=True, **kwargs
-            )
-            effect_subsystem = pyphi.Subsystem(
-                network, state, subset, backward_tpm=False, **kwargs
-            )
-            yield (cause_subsystem, effect_subsystem)
-        except pyphi.exceptions.StateUnreachableError:
-            pass
-
-
-def all_complexes(network, state, subsystem_indices=None, **kwargs):
-    """Yield SIAs for all subsystems of the network."""
-    if subsystem_indices is None:
-        subsystem_indices = network.node_indices
-    for cause_subsystem, effect_subsystem in reachable_subsystems(
-        network, subsystem_indices, state
-    ):
-        yield pyphi.backwards.sia(cause_subsystem, effect_subsystem, **kwargs)
+#     # Return subsystems largest to smallest to optimize parallel
+#     # resource usage.
+#     for subset in pyphi.utils.powerset(indices, nonempty=True, reverse=True):
+#         try:
+#             cause_subsystem = pyphi.Subsystem(
+#                 network, state, subset, backward_tpm=True, **kwargs
+#             )
+#             effect_subsystem = pyphi.Subsystem(
+#                 network, state, subset, backward_tpm=False, **kwargs
+#             )
+#             yield (cause_subsystem, effect_subsystem)
+#         except pyphi.exceptions.StateUnreachableError:
+#             pass
 
 
-def irreducible_complexes(network, state, **kwargs):
-    """Yield SIAs for irreducible subsystems of the network."""
-    yield from filter(None, all_complexes(network, state, **kwargs))
+# def all_complexes(network, state, subsystem_indices=None, **kwargs):
+#     """Yield SIAs for all subsystems of the network."""
+#     if subsystem_indices is None:
+#         subsystem_indices = network.node_indices
+#     for cause_subsystem, effect_subsystem in reachable_subsystems(
+#         network, subsystem_indices, state
+#     ):
+#         yield pyphi.backwards.sia(cause_subsystem, effect_subsystem, **kwargs)
 
 
-def maximal_complex(network, state, **kwargs):
-    return max(
-        irreducible_complexes(network, state, **kwargs),
-        default=pyphi.new_big_phi.NullSystemIrreducibilityAnalysis,
-    )
+# def irreducible_complexes(network, state, **kwargs):
+#     """Yield SIAs for irreducible subsystems of the network."""
+#     yield from filter(None, all_complexes(network, state, **kwargs))
 
 
-def condensed(network, state, **kwargs):
-    """Return a list of maximal non-overlapping complexes."""
-    result = []
-    covered_nodes = set()
+# def maximal_complex(network, state, **kwargs):
+#     return max(
+#         irreducible_complexes(network, state, **kwargs),
+#         default=pyphi.new_big_phi.NullSystemIrreducibilityAnalysis,
+#     )
 
-    for c in reversed(sorted(irreducible_complexes(network, state, **kwargs))):
-        if not any(n in covered_nodes for n in c.node_indices):
-            result.append(c)
-            covered_nodes = covered_nodes | set(c.node_indices)
 
-    return result
+# def condensed(network, state, **kwargs):
+#     """Return a list of maximal non-overlapping complexes."""
+#     result = []
+#     covered_nodes = set()
+
+#     for c in reversed(sorted(irreducible_complexes(network, state, **kwargs))):
+#         if not any(n in covered_nodes for n in c.node_indices):
+#             result.append(c)
+#             covered_nodes = covered_nodes | set(c.node_indices)
+
+#     return result
 
 
 def get_maximal_complexes_by_state(network, states=None):
@@ -207,7 +208,7 @@ def get_maximal_complexes_by_state(network, states=None):
     if states is None:
         states = pyphi.utils.all_states(network.size)
     for state in states:
-        maximal_complexes_by_state[state] = condensed(network, state)
+        maximal_complexes_by_state[state] = pyphi.compute.condensed(network, state)
     return maximal_complexes_by_state
 
 
@@ -218,41 +219,41 @@ def print_maximal_complexes_by_state(network, mcbs):
             print(sia)
 
 
-def get_subsystem_sia(network, network_state, subsystem_indices=None, **kwargs):
-    cause_subsystem = pyphi.Subsystem(
-        network, network_state, subsystem_indices, backward_tpm=True, **kwargs
-    )
-    effect_subsystem = pyphi.Subsystem(
-        network, network_state, subsystem_indices, backward_tpm=False, **kwargs
-    )
-    return pyphi.backwards.sia(cause_subsystem, effect_subsystem, **kwargs)
+# def get_subsystem_sia(network, network_state, subsystem_indices=None, **kwargs):
+#     cause_subsystem = pyphi.Subsystem(
+#         network, network_state, subsystem_indices, backward_tpm=True, **kwargs
+#     )
+#     effect_subsystem = pyphi.Subsystem(
+#         network, network_state, subsystem_indices, backward_tpm=False, **kwargs
+#     )
+#     return pyphi.backwards.sia(cause_subsystem, effect_subsystem, **kwargs)
 
 
-def get_phi_structure(network, network_state, sia, **kwargs):
-    cause_subsystem = pyphi.Subsystem(
-        network, network_state, sia.node_indices, backward_tpm=True, **kwargs
-    )
-    effect_subsystem = pyphi.Subsystem(
-        network, network_state, sia.node_indices, backward_tpm=False, **kwargs
-    )
-    candidate_distinctions = pyphi.backwards.compute_combined_ces(
-        cause_subsystem, effect_subsystem
-    )
-    distinctions = candidate_distinctions.resolve_congruence(sia.system_state)
-    relations = pyphi.relations.relations(distinctions)
-    return pyphi.new_big_phi.phi_structure(
-        subsystem=effect_subsystem,
-        sia=sia,
-        distinctions=distinctions,
-        relations=relations,
-    )
+# def get_phi_structure(network, network_state, sia, **kwargs):
+#     cause_subsystem = pyphi.Subsystem(
+#         network, network_state, sia.node_indices, backward_tpm=True, **kwargs
+#     )
+#     effect_subsystem = pyphi.Subsystem(
+#         network, network_state, sia.node_indices, backward_tpm=False, **kwargs
+#     )
+#     candidate_distinctions = pyphi.backwards.compute_combined_ces(
+#         cause_subsystem, effect_subsystem
+#     )
+#     distinctions = candidate_distinctions.resolve_congruence(sia.system_state)
+#     relations = pyphi.relations.relations(distinctions)
+#     return pyphi.new_big_phi.phi_structure(
+#         subsystem=effect_subsystem,
+#         sia=sia,
+#         distinctions=distinctions,
+#         relations=relations,
+#     )
 
 
-def get_phi_structures_by_state(network, mcbs):
-    return {
-        state: [get_phi_structure(network, state, sia) for sia in mcbs[state]]
-        for state in mcbs
-    }
+# def get_phi_structures_by_state(network, mcbs):
+#     return {
+#         state: [get_phi_structure(network, state, sia) for sia in mcbs[state]]
+#         for state in mcbs
+#     }
 
 
 print_phi_structures_by_state = print_maximal_complexes_by_state
