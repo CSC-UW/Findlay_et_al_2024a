@@ -17,7 +17,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-  "pyphi[visualize,parallel] @ git+https://github.com/wmayner/pyphi.git@feature/iit-4.0",
+  "pyphi[visualize] @ git+https://github.com/wmayner/pyphi.git@feature/iit-4.0",
   "graphiit @ git+https://github.com/CSC-UW/graphiit.git@feature/iit-4.0",
   "jupyter",
   "matplotlib",

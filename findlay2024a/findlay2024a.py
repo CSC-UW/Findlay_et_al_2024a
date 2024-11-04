@@ -1,150 +1,35 @@
+from pathlib import Path
+
+import graphiit
 import matplotlib.pyplot as plt
 import numpy as np
 import pyphi
 import pyphi.compute
 import pyphi.convert
-#import pyphi.exceptions
-#import pyphi.network_generator
-#import pyphi.new_big_phi
+
+# import pyphi.exceptions
+# import pyphi.network_generator
+import pyphi.new_big_phi
 import pyphi.utils
-#import pyphi.validate
+
+# import pyphi.validate
 import pyphi.visualize
 
 
-def get_theme():
-    def _italicize(text):
-        return "<i>" + "".join(text) + "</i>"
-
-    return pyphi.visualize.phi_structure.theme.DefaultTheme(
-        show=dict(
-            purviews=True,
-            mechanisms=True,
-            cause_effect_links=False,
-            mechanism_purview_links=True,
-            two_relations=True,
-            three_relations=True,
-        ),
-        layout={
-            **dict(
-                autosize=False,
-                showlegend=False,
-                title="",
-                width=1800,
-                height=1400,
-                paper_bgcolor="rgba(0, 0, 0, 0)",
-                plot_bgcolor="rgba(0, 0, 0, 0)",
-                scene_camera=dict(eye=dict(x=2.5, y=1.5, z=0.15)),
-            ),
-        },
-        labels=dict(postprocessor=_italicize),
-        fontfamily="Arial",
-        fontsize=30,
-        pointsizerange=(50, 50),
-        linewidthrange=(2, 5),
-        linkwidthrange=(2, 5),
-        geometry=dict(
-            purviews=dict(
-                arrange=dict(
-                    max_radius=1,
-                    z_offset=0.0,
-                    z_spacing=1,
-                    radius_func="log_n_choose_k",
-                    aspect_ratio=1,
-                ),
-                coordinate_kwargs=dict(
-                    direction_offset=0.3,
-                    subset_offset_radius=0.0,
-                    state_offset_radius=0.00,
-                    rotation=0.0,
-                    rotation_plane="xy",
-                ),
-            ),
-            mechanisms=dict(
-                arrange=dict(
-                    max_radius=0.5,
-                    z_offset=-0.250,
-                    z_spacing=1.75,
-                    radius_func="log_n_choose_k",
-                    aspect_ratio=1,
-                ),
-                coordinate_kwargs=dict(
-                    rotation=0.0,
-                    rotation_plane="xy",
-                ),
-            ),
-        ),
-        direction=dict(
-            cause_color="#8D3D00",
-            effect_color="#006146",
-        ),
-        mechanisms=dict(
-            mode="text",
-            textposition="middle center",
-            hoverinfo="skip",
-            showlegend=False,
-            opacity=1,
-        ),
-        purviews=dict(
-            mode="text+markers",
-            textposition="middle center",
-            hoverinfo="skip",
-            showlegend=False,
-            textfont=dict(
-                color="direction",
-            ),
-            marker=dict(
-                opacity=0.5,
-                color="phi",
-                size="phi",
-                symbol="circle",
-                colorscale="viridis",
-                cmin=0,
-                cmax=1,
-                showscale=False,
-            ),
-        ),
-        mechanism_purview_links=dict(
-            mode="lines",
-            hoverinfo="skip",
-            showlegend=False,
-            opacity=1,
-            line=dict(
-                color="orange",
-                width="phi",
-            ),
-        ),
-        two_relations=dict(
-            detail_threshold=100,
-            opacity=0.75,
-            mode="lines",
-            hoverinfo="skip",
-            showlegend=False,
-            showscale=False,
-            line=dict(
-                width="phi",
-                color="phi",
-                colorscale="reds",
-                cmin=0,
-                cmax=1,
-                showscale=False,
-                showlegend=False,
-            ),
-        ),
-        three_relations=dict(
-            detail_threshold=100,
-            intensity="phi",
-            intensitymode="cell",
-            hoverinfo="skip",
-            colorscale="viridis",
-            opacity=0.025,
-            #         opacity_range=(0.01,.1),
-            cmin=0,
-            cmax=1,
-            showscale=False,
-            showlegend=False,
-        ),
-        legendgroup_postfix="",
-    )
+def get_sia_and_ces(
+    graph: graphiit.Graph, unit_labels: list[str], vokram_blanket: bool = True
+):
+    if vokram_blanket:
+        g = graph.vokram_blanket(unit_labels)
+    else:
+        g = graph.subgraph(unit_labels)
+    network = g.pyphi_network()
+    state = g.get_state_array(dtype=int)
+    subsystem_indices = tuple(list(g.nodes).index(u) for u in unit_labels)
+    subsystem = pyphi.Subsystem(network, state, subsystem_indices)
+    sia = pyphi.new_big_phi.sia(subsystem)
+    ces = pyphi.new_big_phi.phi_structure(subsystem, sia)
+    return sia, ces, state
 
 
 # Shouldn't be necessary anymore.
@@ -189,17 +74,19 @@ def get_theme():
 #     )
 
 
-# def condensed(network, state, **kwargs):
-#     """Return a list of maximal non-overlapping complexes."""
-#     result = []
-#     covered_nodes = set()
+def condensed(network, state, **kwargs):
+    """Return a list of maximal non-overlapping complexes."""
+    result = []
+    covered_nodes = set()
 
-#     for c in reversed(sorted(irreducible_complexes(network, state, **kwargs))):
-#         if not any(n in covered_nodes for n in c.node_indices):
-#             result.append(c)
-#             covered_nodes = covered_nodes | set(c.node_indices)
+    for c in reversed(
+        sorted(pyphi.new_big_phi.irreducible_complexes(network, state, **kwargs))
+    ):
+        if not any(n in covered_nodes for n in c.node_indices):
+            result.append(c)
+            covered_nodes = covered_nodes | set(c.node_indices)
 
-#     return result
+    return result
 
 
 def get_maximal_complexes_by_state(network, states=None):
@@ -208,7 +95,7 @@ def get_maximal_complexes_by_state(network, states=None):
     if states is None:
         states = pyphi.utils.all_states(network.size)
     for state in states:
-        maximal_complexes_by_state[state] = pyphi.compute.condensed(network, state)
+        maximal_complexes_by_state[state] = condensed(network, state)
     return maximal_complexes_by_state
 
 
@@ -249,31 +136,41 @@ def print_maximal_complexes_by_state(network, mcbs):
 #     )
 
 
-# def get_phi_structures_by_state(network, mcbs):
-#     return {
-#         state: [get_phi_structure(network, state, sia) for sia in mcbs[state]]
-#         for state in mcbs
-#     }
+def get_phi_structures_by_state(network, mcbs):
+    return {
+        state: [
+            pyphi.new_big_phi.phi_structure(
+                pyphi.Subsystem(network, state, nodes=sia.node_indices), sia
+            )
+            for sia in mcbs[state]
+        ]
+        for state in mcbs
+    }
 
 
-print_phi_structures_by_state = print_maximal_complexes_by_state
+def stringify_state(state):
+    return "".join(str(x) for x in state)
 
 
-def plot_phi_structures_by_state(network, mcbs, psbs):
+def stringify_complex(sia):
+    return "".join([sia.node_labels[i] for i in sia.node_indices])
+
+
+def plot_phi_structures_by_state(network, mcbs, psbs, savedir="", **kwargs):
     for network_state in pyphi.utils.all_states(network.size):
-        state_string = "".join(str(x) for x in network_state)
+        state_string = stringify_state(network_state)
         print(f"Network state: {state_string}")
         for sia, phi_structure in zip(mcbs[network_state], psbs[network_state]):
-            complex_string = "".join([sia.node_labels[i] for i in sia.node_indices])
+            complex_string = stringify_complex(sia)
             print(f"Complex: {complex_string}")
             fig = pyphi.visualize.phi_structure.plot_phi_structure(
                 phi_structure=phi_structure,
                 state=network_state,
                 node_labels=sia.node_labels,
                 node_indices=sia.node_indices,
-                theme=get_theme(),
+                **kwargs,
             )
-            fig.write_html(f"{state_string}_{complex_string}.html")
+            fig.write_html(Path(savedir) / f"{state_string}_{complex_string}.html")
 
 
 def summarize_all_states(network, mcbs, psbs):
@@ -420,4 +317,31 @@ def get_pqrs_micro_example():
     node_labels = ("P", "Q", "R", "S")
     network = pyphi.Network(tpm, node_labels=node_labels)
     state = (0, 1, 0, 1)
+    return network, state
+
+
+def get_wxyz_micro_example():
+    tpm = np.array(
+        [
+            [0, 0, 0, 0],
+            [1, 0, 1, 1],
+            [1, 0, 0, 1],
+            [1, 0, 1, 1],
+            [0, 1, 0, 0],
+            [1, 1, 1, 1],
+            [1, 1, 0, 1],
+            [1, 1, 1, 1],
+            [0, 1, 1, 0],
+            [1, 1, 1, 1],
+            [1, 1, 1, 1],
+            [0, 1, 1, 0],
+            [0, 1, 1, 0],
+            [1, 1, 0, 1],
+            [1, 0, 1, 1],
+            [0, 0, 0, 0],
+        ]
+    )
+    node_labels = ("W", "X", "Y", "Z")
+    network = pyphi.Network(tpm, node_labels=node_labels)
+    state = (1, 1, 0, 1)
     return network, state
