@@ -3,6 +3,7 @@ from pathlib import Path
 import graphiit
 import matplotlib.pyplot as plt
 import numpy as np
+import pyfonts
 import pyphi
 import pyphi.compute
 import pyphi.convert

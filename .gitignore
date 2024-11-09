@@ -1,5 +1,8 @@
 notebooks/__pyphi_cache__
 notebooks/phi_structures
+notebooks/pqrs_plots
+notebooks/wxyz_plots
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
