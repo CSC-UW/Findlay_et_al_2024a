@@ -1,0 +1,3 @@
+- `divided_clock_computer.py` contains all details about the computer's wiring, initialization, operation, and scaling. 
+- `findlay2025a.py` just contains utilities to be used in `../notebooks/`. 
+- `pub_theme.py` and `time_theme.py` control the appearance of cause-effect structures when plotted in `../notebooks/`.

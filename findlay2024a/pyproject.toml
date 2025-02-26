@@ -1,0 +1,29 @@
+[project]
+name = "findlay2024a"
+version = "0.1.0"
+authors = [
+  { name="Graham Findlay", email="gfindlay@wisc.edu" }
+]
+description = "Code for `Dissociating Artificial Intelligence from Artificial Consciousness`."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "graphiit",
+    "matplotlib>=3.10.0",
+    "numpy>=1.26.4",
+    "pyphi[visualize]",
+    "tqdm>=4.67.1",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+    "ruff",
+]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+graphiit = { git = "https://github.com/CSC-UW/graphiit", branch = "feature/iit-4.0" }
+pyphi = { git = "https://github.com/wmayner/pyphi", branch = "feature/iit-4.0" }

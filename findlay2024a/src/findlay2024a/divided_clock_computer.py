@@ -8,6 +8,7 @@ from tqdm.auto import tqdm
 
 from . import findlay2024a as cc
 
+
 @functools.cache
 def get_target_labels(k):
     n = 2**k
@@ -31,8 +32,8 @@ def get_instruction_register_labels(k):
 @functools.cache
 def get_clock_labels(k, flat=False):
     c = ["C0"]
-    x = [f"X{i+1}" for i in range(k)]
-    a = [f"A{i+1}" for i in range(k)]
+    x = [f"X{i + 1}" for i in range(k)]
+    a = [f"A{i + 1}" for i in range(k)]
     if flat:
         return c + [xa for pair in zip(x, a) for xa in pair]
     else:
@@ -150,7 +151,7 @@ def get_mux_function(selector_state):
     n = len(selector_state)
 
     def _func(inputs):
-        assert len(inputs) == n + 1, f"{n}-bit mux must receive {n+1} inputs."
+        assert len(inputs) == n + 1, f"{n}-bit mux must receive {n + 1} inputs."
         selector_inputs = inputs[:n]
         return (tuple(selector_inputs) == tuple(selector_state)) and inputs[n]
 
@@ -278,12 +279,13 @@ def get_WXyZ_graphiit(feedback):
     k = int(np.log2(n))
     return get_graphiit(k, tpm, state, feedback)
 
+
 def check_tpm_simulation(tpm, feedback: bool):
     network = pyphi.Network(tpm)
     cycles = cc.get_cycles(network)
 
     k = int(np.log2(len(network)))
-    n = 2 ** k
+    n = 2**k
     outputs = get_data_register_output_labels(k)
     for cycle in cycles:
         initial_state = cycle[0]
@@ -302,10 +304,11 @@ def check_tpm_simulation(tpm, feedback: bool):
                 raise ValueError(msg)
             graph.tic(2 * n)
 
+
 def check_k_simulation(k, n_trials, feedback: bool):
-    n = 2 ** k
+    n = 2**k
     all_states = np.array(list(pyphi.utils.all_states(n)))
     for _ in tqdm(range(n_trials)):
-        ixs = np.random.choice(2 ** n, 2 ** n, replace=True)
+        ixs = np.random.choice(2**n, 2**n, replace=True)
         tpm = all_states[ixs]
         check_tpm_simulation(tpm, feedback)

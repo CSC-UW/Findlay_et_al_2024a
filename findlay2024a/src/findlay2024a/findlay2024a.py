@@ -3,17 +3,11 @@ from pathlib import Path
 import graphiit
 import matplotlib.pyplot as plt
 import numpy as np
-import pyfonts
 import pyphi
 import pyphi.compute
 import pyphi.convert
-
-# import pyphi.exceptions
-# import pyphi.network_generator
 import pyphi.new_big_phi
 import pyphi.utils
-
-# import pyphi.validate
 import pyphi.visualize
 
 
@@ -31,48 +25,6 @@ def get_sia_and_ces(
     sia = pyphi.new_big_phi.sia(subsystem)
     ces = pyphi.new_big_phi.phi_structure(subsystem, sia)
     return sia, ces, state
-
-
-# Shouldn't be necessary anymore.
-# def reachable_subsystems(network, indices, state, **kwargs):
-#     """A generator over all subsystems in a valid state."""
-#     pyphi.validate.is_network(network)
-
-#     # Return subsystems largest to smallest to optimize parallel
-#     # resource usage.
-#     for subset in pyphi.utils.powerset(indices, nonempty=True, reverse=True):
-#         try:
-#             cause_subsystem = pyphi.Subsystem(
-#                 network, state, subset, backward_tpm=True, **kwargs
-#             )
-#             effect_subsystem = pyphi.Subsystem(
-#                 network, state, subset, backward_tpm=False, **kwargs
-#             )
-#             yield (cause_subsystem, effect_subsystem)
-#         except pyphi.exceptions.StateUnreachableError:
-#             pass
-
-
-# def all_complexes(network, state, subsystem_indices=None, **kwargs):
-#     """Yield SIAs for all subsystems of the network."""
-#     if subsystem_indices is None:
-#         subsystem_indices = network.node_indices
-#     for cause_subsystem, effect_subsystem in reachable_subsystems(
-#         network, subsystem_indices, state
-#     ):
-#         yield pyphi.backwards.sia(cause_subsystem, effect_subsystem, **kwargs)
-
-
-# def irreducible_complexes(network, state, **kwargs):
-#     """Yield SIAs for irreducible subsystems of the network."""
-#     yield from filter(None, all_complexes(network, state, **kwargs))
-
-
-# def maximal_complex(network, state, **kwargs):
-#     return max(
-#         irreducible_complexes(network, state, **kwargs),
-#         default=pyphi.new_big_phi.NullSystemIrreducibilityAnalysis,
-#     )
 
 
 def condensed(network, state, **kwargs):
@@ -105,36 +57,6 @@ def print_maximal_complexes_by_state(network, mcbs):
         print(f"Network state: {state}")
         for sia in mcbs[state]:
             print(sia)
-
-
-# def get_subsystem_sia(network, network_state, subsystem_indices=None, **kwargs):
-#     cause_subsystem = pyphi.Subsystem(
-#         network, network_state, subsystem_indices, backward_tpm=True, **kwargs
-#     )
-#     effect_subsystem = pyphi.Subsystem(
-#         network, network_state, subsystem_indices, backward_tpm=False, **kwargs
-#     )
-#     return pyphi.backwards.sia(cause_subsystem, effect_subsystem, **kwargs)
-
-
-# def get_phi_structure(network, network_state, sia, **kwargs):
-#     cause_subsystem = pyphi.Subsystem(
-#         network, network_state, sia.node_indices, backward_tpm=True, **kwargs
-#     )
-#     effect_subsystem = pyphi.Subsystem(
-#         network, network_state, sia.node_indices, backward_tpm=False, **kwargs
-#     )
-#     candidate_distinctions = pyphi.backwards.compute_combined_ces(
-#         cause_subsystem, effect_subsystem
-#     )
-#     distinctions = candidate_distinctions.resolve_congruence(sia.system_state)
-#     relations = pyphi.relations.relations(distinctions)
-#     return pyphi.new_big_phi.phi_structure(
-#         subsystem=effect_subsystem,
-#         sia=sia,
-#         distinctions=distinctions,
-#         relations=relations,
-#     )
 
 
 def get_phi_structures_by_state(network, mcbs):
@@ -270,7 +192,7 @@ def plot_sbs_tpm(network, use_node_labels=True, height=None):
 def _get_cycle(state, current_states, next_states):
     """Get the cycle starting from a given state."""
     cycle = []
-    while not (tuple(state) in cycle):
+    while tuple(state) not in cycle:
         cycle.append(tuple(state))
         state = next_states[current_states.index(state)]
     return cycle

@@ -1,10 +1,6 @@
 from pyphi.visualize.phi_structure import DefaultTheme
 
 
-# def _italicize(text):
-#    return r"<i>" + "".join(text) + r"</i>"
-
-
 class PubTheme(DefaultTheme):
     DEFAULTS = dict(
         show=dict(
